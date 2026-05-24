@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elara CHSL — Leakage Complaint Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap');
+:root{--bg:#0e0f11;--surface:#16181c;--surface2:#1e2128;--border:rgba(255,255,255,0.07);--text:#e8e9ed;--muted:#6b7180;--accent:#f97316;--accent2:#3b82f6;--accent3:#22c55e;--amber:#f59e0b;--red:#ef4444;--font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:13px;min-height:100vh}
+header{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:10}
+.logo{font-family:var(--font-head);font-size:17px;font-weight:700}.logo span{color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#lastUpdated{font-size:11px;color:var(--muted)}
+.live-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--accent3);border:1px solid rgba(34,197,94,0.25);border-radius:20px;padding:3px 10px}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--accent3);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+.status-bar{padding:9px 28px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.metric{background:var(--surface);padding:16px 20px}
+.m-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px}
+.m-val{font-family:var(--font-head);font-size:28px;font-weight:700;line-height:1}
+.orange{color:var(--accent)}.red{color:var(--red)}.amber{color:var(--amber)}.blue{color:var(--accent2)}.green{color:var(--accent3)}
+.main{padding:20px 28px}
+.wing-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px}
+.wing-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color 0.15s;user-select:none}
+.wing-card:hover,.wing-card.active{border-color:var(--accent)}
+.wing-card .wc-label{font-size:10px;color:var(--muted);margin-bottom:4px}
+.wing-card .wc-count{font-family:var(--font-head);font-size:24px;font-weight:700}
+.filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+select,input[type=text]{font-family:var(--font-mono);font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;outline:none}
+select:focus,input:focus{border-color:var(--accent)}
+input[type=text]{min-width:200px}
+#resultCount{margin-left:auto;font-size:11px;color:var(--muted)}
+.table-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead tr{background:var(--surface);border-bottom:1px solid var(--border)}
+th{padding:9px 12px;text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;font-weight:500;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+td{padding:9px 12px;vertical-align:top;color:var(--text);line-height:1.5}
+.wing-tag{display:inline-block;font-family:var(--font-head);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border)}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.badge.jp{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
+.badge.chsl{background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.25)}
+.badge.resolved{background:rgba(34,197,94,0.15);color:var(--accent3);border:1px solid rgba(34,197,94,0.25)}
+.crit-tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(249,115,22,0.2);color:var(--accent);border:1px solid rgba(249,115,22,0.3);margin-left:4px;vertical-align:middle;text-transform:uppercase;letter-spacing:0.5px}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.skeleton{animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%,100%{opacity:0.4}50%{opacity:0.15}}
+footer{margin-top:40px;padding:16px 28px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">ELARA <span>//</span> Leakage Tracker</div>
+  <div class="header-right">
+    <div class="live-pill"><div class="dot-live"></div> Auto-updated daily</div>
+    <span id="lastUpdated">Loading…</span>
+  </div>
+</header>
+<div class="status-bar" id="statusBar">Fetching latest complaint data…</div>
+<div class="metrics">
+  <div class="metric"><div class="m-label">Total complaints</div><div class="m-val orange" id="mTotal">—</div></div>
+  <div class="metric"><div class="m-label">Pending — JP Infra</div><div class="m-val red" id="mJP">—</div></div>
+  <div class="metric"><div class="m-label">Pending — CHSL</div><div class="m-val amber" id="mCHSL">—</div></div>
+  <div class="metric"><div class="m-label">Critical / Escalate</div><div class="m-val orange" id="mCrit">—</div></div>
+  <div class="metric"><div class="m-label">Resolved</div><div class="m-val green" id="mResolved">—</div></div>
+</div>
+<div class="main">
+  <div class="wing-row" id="wingRow"></div>
+  <div class="filters">
+    <select id="wingFilter" onchange="renderTable()">
+      <option value="">All wings</option>
+      <option>4A</option><option>4B</option><option>4C</option><option>4D</option>
+    </select>
+    <select id="partyFilter" onchange="renderTable()">
+      <option value="">All statuses</option>
+      <option value="JP Infra">JP Infra pending</option>
+      <option value="Elara CHSL">CHSL pending</option>
+      <option value="Resolved">Resolved</option>
+      <option value="Critical">Critical only</option>
+    </select>
+    <input type="text" id="search" placeholder="Search flat, resident, issue…" oninput="renderTable()">
+    <span id="resultCount"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Wing</th><th>Flat</th><th>Resident</th><th>First raised</th><th>Last update</th>
+        <th>Issue</th><th>Current status</th><th>Suggested action</th><th>Pending with</th>
+      </tr></thead>
+      <tbody id="tbody">
+        <tr><td colspan="9" class="empty skeleton">Loading complaint data…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<footer>
+  <span>Elara CHSL — JP North Garden City, Mira Road</span>
+  <span id="footerUpdated"></span>
+</footer>
+<script>
+var GITHUB_USER="complaintselara-bot";
+var GITHUB_REPO="elara-dashboard";
+var DATA_URL="https://"+GITHUB_USER+".github.io/"+GITHUB_REPO+"/data.json?nocache="+Date.now();
+var complaints=[];
+fetch(DATA_URL).then(function(r){if(!r.ok)throw new Error("data.json not found. Run the Apps Script first.");return r.json();}).then(function(payload){complaints=payload.complaints||[];var updated=new Date(payload.updated);var dateStr=updated.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"});var timeStr=updated.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});document.getElementById("lastUpdated").textContent="Updated "+dateStr+" "+timeStr;document.getElementById("footerUpdated").textContent="Data refreshed: "+dateStr+" "+timeStr;document.getElementById("statusBar").textContent=complaints.length+" complaints loaded from Gmail. Next auto-update: tomorrow 7:00 AM.";updateMetrics();buildWingCards();renderTable();}).catch(function(err){document.getElementById("statusBar").textContent="Error: "+err.message;document.getElementById("tbody").innerHTML='<tr><td colspan="9" class="empty">Could not load data. See setup instructions.</td></tr>';});
+function updateMetrics(){document.getElementById("mTotal").textContent=complaints.length;document.getElementById("mJP").textContent=complaints.filter(function(c){return c.party==="JP Infra";}).length;document.getElementById("mCHSL").textContent=complaints.filter(function(c){return c.party==="Elara CHSL";}).length;document.getElementById("mCrit").textContent=complaints.filter(function(c){return c.critical;}).length;document.getElementById("mResolved").textContent=complaints.filter(function(c){return c.party==="Resolved";}).length;}
+function buildWingCards(){var wings=["4A","4B","4C","4D"];document.getElementById("wingRow").innerHTML=wings.map(function(w){var count=complaints.filter(function(c){return c.wing===w;}).length;return'<div class="wing-card" id="wc-'+w+'" onclick="filterWing(\''+w+'\')"><div class="wc-label">Wing '+w+'</div><div class="wc-count">'+count+'</div></div>';}).join("");}
+function filterWing(w){var sel=document.getElementById("wingFilter");sel.value=sel.value===w?"":w;document.querySelectorAll(".wing-card").forEach(function(el){el.classList.remove("active");});if(sel.value){var el=document.getElementById("wc-"+w);if(el)el.classList.add("active");}renderTable();}
+function badge(party){if(party==="JP Infra")return'<span class="badge jp">JP Infra</span>';if(party==="Elara CHSL")return'<span class="badge chsl">Elara CHSL</span>';if(party==="Resolved")return'<span class="badge resolved">Resolved</span>';return party||"—";}
+function renderTable(){var wing=document.getElementById("wingFilter").value;var party=document.getElementById("partyFilter").value;var q=(document.getElementById("search").value||"").toLowerCase();var filtered=complaints.filter(function(r){if(wing&&r.wing!==wing)return false;if(party==="Critical"&&!r.critical)return false;if(party&&party!=="Critical"&&r.party!==party)return false;if(q&&!([r.flat,r.resident,r.issue,r.status].join(" ").toLowerCase().includes(q)))return false;return true;});document.getElementById("resultCount").textContent=filtered.length+" complaints";if(!filtered.length){document.getElementById("tbody").innerHTML='<tr><td colspan="9" class="empty">No complaints match your filters.</td></tr>';return;}document.getElementById("tbody").innerHTML=filtered.map(function(r){return'<tr><td><span class="wing-tag">'+(r.wing||"—")+'</span></td><td style="white-space:nowrap;font-weight:500">'+(r.flat||"—")+(r.critical?'<span class="crit-tag">⚠ critical</span>':'')+'</td><td style="white-space:nowrap">'+(r.resident||"Unknown")+'</td><td style="white-space:nowrap;color:var(--muted)">'+(r.first||"—")+'</td><td style="white-space:nowrap;color:var(--muted)">'+(r.last||"—")+'</td><td style="max-width:180px">'+(r.issue||"—")+'</td><td style="max-width:180px">'+(r.status||"—")+'</td><td style="max-width:180px;color:var(--amber)">'+(r.action||"—")+'</td><td>'+badge(r.party)+'</td></tr>';}).join("");}
+</script>
+</body>
+</html>
