@@ -1,6 +1,6 @@
 {
-  "updated": "2026-05-24T12:30:00.000Z",
-  "total": 68,
+  "updated": "2026-05-24T13:00:00.000Z",
+  "total": 69,
   "complaints": [
     {
       "wing": "4A",
@@ -817,6 +817,18 @@
       "action": "Confirm paint touchup done & get resident closure confirmation",
       "party": "JP Infra",
       "critical": false
+    },
+    {
+      "wing": "4B",
+      "flat": "0107",
+      "resident": "Prasad Raut",
+      "first": "Jun 2025",
+      "last": "May 2026",
+      "issue": "LR ceiling seepage \u2014 yellow patches; 2 years unresolved",
+      "status": "Joint visit done with project team; reverse grouting promised but date not confirmed",
+      "action": "CRITICAL: JP Infra to confirm date for reverse grouting immediately \u2014 2 years pending",
+      "party": "JP Infra",
+      "critical": true
     }
   ]
 }
